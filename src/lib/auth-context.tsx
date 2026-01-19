@@ -1,72 +1,111 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { authClient, useSession } from "./auth-client";
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isLoginOpen: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  isRegisterOpen: boolean;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string;
+    role: string;
+  } | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   openLogin: () => void;
   closeLogin: () => void;
+  openRegister: () => void;
+  closeRegister: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: session, isPending } = useSession();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
 
-  // Check auth status on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth');
-        const data = await response.json();
-        setIsAuthenticated(data.authenticated);
-      } catch (error) {
-        console.error('Failed to check auth:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    checkAuth();
-  }, []);
-
-  const login = useCallback(async (username: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+      const result = await authClient.signIn.email({
+        email,
+        password,
       });
 
-      if (response.ok) {
-        setIsAuthenticated(true);
-        setIsLoginOpen(false);
-        return true;
+      if (result.error) {
+        console.error("Login failed:", result.error);
+        return false;
       }
-      return false;
+
+      setIsLoginOpen(false);
+      return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
+      return false;
+    }
+  }, []);
+
+  const register = useCallback(async (name: string, email: string, password: string): Promise<boolean> => {
+    try {
+      const result = await authClient.signUp.email({
+        name,
+        email,
+        password,
+      });
+
+      if (result.error) {
+        console.error("Registration failed:", result.error);
+        return false;
+      }
+
+      setIsRegisterOpen(false);
+      return true;
+    } catch (error) {
+      console.error("Registration failed:", error);
       return false;
     }
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth', { method: 'DELETE' });
+      await authClient.signOut();
     } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      setIsAuthenticated(false);
+      console.error("Logout failed:", error);
+    }
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Google sign-in failed:", error);
+    }
+  }, []);
+
+  const signInWithApple = useCallback(async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "apple",
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Apple sign-in failed:", error);
     }
   }, []);
 
   const openLogin = useCallback(() => {
+    setIsRegisterOpen(false);
     setIsLoginOpen(true);
   }, []);
 
@@ -74,16 +113,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoginOpen(false);
   }, []);
 
+  const openRegister = useCallback(() => {
+    setIsLoginOpen(false);
+    setIsRegisterOpen(true);
+  }, []);
+
+  const closeRegister = useCallback(() => {
+    setIsRegisterOpen(false);
+  }, []);
+
+  const user = session?.user ? {
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+    image: session.user.image ?? undefined,
+    role: (session.user as { role?: string }).role ?? "user",
+  } : null;
+
   return (
     <AuthContext.Provider
       value={{
-        isAuthenticated,
-        isLoading,
+        isAuthenticated: !!session?.user,
+        isLoading: isPending,
         isLoginOpen,
+        isRegisterOpen,
+        user,
         login,
+        register,
+        signInWithGoogle,
+        signInWithApple,
         logout,
         openLogin,
         closeLogin,
+        openRegister,
+        closeRegister,
       }}
     >
       {children}

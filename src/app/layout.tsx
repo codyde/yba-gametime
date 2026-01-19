@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GirlsGotGame",
+  title: "YBA Gametime",
   description: "Game results, photos, and videos for YBA Basketball and Football",
 };
 

@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Trophy, Dribbble, ChevronRight } from "lucide-react";
+import { Trophy, Dribbble, ChevronRight, Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Game, heroBackgroundImages } from "@/lib/types";
+import { useAuth } from "@/lib/auth-context";
 
 interface CoverPhoto {
   id: string;
@@ -13,9 +15,12 @@ interface CoverPhoto {
 
 interface HeroProps {
   games: Game[];
+  onManageCovers?: () => void;
 }
 
-export function Hero({ games }: HeroProps) {
+export function Hero({ games, onManageCovers }: HeroProps) {
+  const { isAuthenticated, openLogin, user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [coverPhotos, setCoverPhotos] = useState<CoverPhoto[]>([]);
@@ -85,6 +90,17 @@ export function Hero({ games }: HeroProps) {
         {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/50" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+
+        {/* Admin edit button */}
+        {isAdmin && onManageCovers && (
+          <button
+            onClick={onManageCovers}
+            className="absolute top-4 right-4 z-10 flex items-center gap-2 px-3 py-2 bg-black/60 hover:bg-black/80 backdrop-blur-sm border border-white/20 hover:border-primary/50 rounded-lg text-white text-sm font-medium transition-all group"
+          >
+            <Pencil className="w-4 h-4 group-hover:text-primary transition-colors" />
+            <span className="hidden sm:inline">Edit Cover Photos</span>
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -102,7 +118,7 @@ export function Hero({ games }: HeroProps) {
             {/* Main heading */}
             <h1 className="text-5xl sm:text-7xl font-black tracking-tight">
               <span className="text-gradient-pink">YBA</span>{" "}
-              <span className="text-foreground">Sports</span>
+              <span className="text-foreground">Gametime</span>
             </h1>
 
             {/* Subtitle */}

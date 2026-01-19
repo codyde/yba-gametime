@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { 
   Play, 
   X, 
@@ -17,7 +18,8 @@ import {
   Film,
   Tag,
   Loader2,
-  Share2
+  Share2,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,6 +119,7 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
         }, 100);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length]);
 
   // Keyboard navigation
@@ -180,13 +183,6 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
       setSelectedIndex(newIndex);
       setEditingCaption(false);
       setCaptionValue(items[newIndex]?.caption || "");
-    }
-  };
-
-  const handleCaptionChange = (newCaption: string) => {
-    setCaptionValue(newCaption);
-    if (selectedIndex !== null) {
-      debouncedSave(items[selectedIndex].id, newCaption, tagsValue);
     }
   };
 
@@ -854,8 +850,18 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
                       {selectedItem?.caption || "Untitled"}
                     </h2>
                     
-                    {/* Share and Download buttons */}
+                    {/* Share, View Details, and Download buttons */}
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      <Link href={`/video/${selectedItem?.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-white/70 hover:text-white hover:bg-white/10 h-9 px-3"
+                        >
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          View Details
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="sm"

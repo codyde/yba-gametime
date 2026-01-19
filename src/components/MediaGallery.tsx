@@ -19,11 +19,19 @@ import {
   Tag,
   Loader2,
   Share2,
-  ExternalLink
+  ExternalLink,
+  Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Dialog, 
   DialogContent,
@@ -39,11 +47,12 @@ interface MediaGalleryProps {
   onUpdateMedia?: (mediaId: string, updates: { caption?: string; tags?: string[]; thumbnail?: string }) => void;
   onUpdateCaption?: (mediaId: string, caption: string) => void;
   onDelete?: (mediaId: string) => void;
+  useDetailPage?: boolean; // If true, navigate to detail page instead of opening dialog
 }
 
 type ViewSize = "compact" | "default" | "fullscreen";
 
-export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }: MediaGalleryProps) {
+export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete, useDetailPage = true }: MediaGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [editingCaption, setEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState("");
@@ -61,6 +70,19 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
 
   const selectedItem = selectedIndex !== null ? items[selectedIndex] : null;
   const isOpen = selectedIndex !== null && selectedItem !== null;
+
+  // Tag filter state
+  const [selectedTag, setSelectedTag] = useState<string>("all");
+  
+  // Get all unique tags from items
+  const allTags = Array.from(
+    new Set(items.flatMap((item) => item.tags || []))
+  ).sort();
+  
+  // Filter items by selected tag
+  const filteredItems = selectedTag === "all" 
+    ? items 
+    : items.filter((item) => item.tags?.includes(selectedTag));
 
   // Debounced auto-save function
   const debouncedSave = useCallback((mediaId: string, caption: string, tags: string[]) => {
@@ -460,15 +482,113 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
 
   return (
     <>
+      {/* Mobile tag filter */}
+      {isMobile && allTags.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <Select value={selectedTag} onValueChange={setSelectedTag}>
+            <SelectTrigger className="flex-1 h-9">
+              <SelectValue placeholder="Filter by tag" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Videos ({items.length})</SelectItem>
+              {allTags.map((tag) => (
+                <SelectItem key={tag} value={tag}>
+                  {tag} ({items.filter((i) => i.tags?.includes(tag)).length})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedTag !== "all" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedTag("all")}
+              className="h-9 px-2"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Grid Gallery - single column on mobile */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {items.map((item, index) => (
+        {filteredItems.map((item) => {
+          // Get the original index from items array for share/lightbox functionality
+          const originalIndex = items.findIndex((i) => i.id === item.id);
+          return (
           <div key={item.id} className="flex flex-col">
             {/* Thumbnail */}
-            <button
-              onClick={() => openLightbox(index)}
-              className="group relative aspect-square rounded-lg overflow-hidden bg-muted card-hover border border-border focus:outline-none focus:ring-2 focus:ring-primary"
-            >
+            {useDetailPage ? (
+              <Link
+                href={`/video/${item.id}`}
+                className="group relative aspect-square rounded-lg overflow-hidden bg-muted card-hover border border-border focus:outline-none focus:ring-2 focus:ring-primary block"
+              >
+                {item.type === "image" ? (
+                  <Image
+                    src={item.url}
+                    alt={item.caption || "Media"}
+                    fill
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  />
+                ) : item.thumbnail ? (
+                  <>
+                    <Image
+                      src={item.thumbnail}
+                      alt={item.caption || "Video thumbnail"}
+                      fill
+                      unoptimized={item.thumbnail.endsWith('.gif')}
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    />
+                    {/* Always visible play button for videos */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-14 h-14 rounded-full bg-black/60 flex items-center justify-center group-hover:bg-primary/90 transition-colors">
+                        <Play className="w-7 h-7 text-white ml-1" fill="currentColor" />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Play className="w-8 h-8 text-primary ml-1" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                  {item.type === "video" && !item.thumbnail ? (
+                    <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center">
+                      <Play className="w-6 h-6 text-white ml-0.5" fill="currentColor" />
+                    </div>
+                  ) : item.type === "image" ? (
+                    <div className="px-3 py-1.5 bg-card/90 rounded-full text-sm font-medium">
+                      View
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Video duration badge - bottom right (YouTube style) */}
+                {item.type === "video" && (
+                  <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-[11px] font-medium text-white z-10">
+                    Video
+                  </div>
+                )}
+
+                {/* Image caption - bottom */}
+                {item.type === "image" && item.caption && (
+                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
+                    <p className="text-xs text-white truncate">{item.caption}</p>
+                  </div>
+                )}
+              </Link>
+            ) : (
+              <button
+                onClick={() => openLightbox(originalIndex)}
+                className="group relative aspect-square rounded-lg overflow-hidden bg-muted card-hover border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+              >
               {item.type === "image" ? (
                 <Image
                   src={item.url}
@@ -527,7 +647,8 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
                   <p className="text-xs text-white truncate">{item.caption}</p>
                 </div>
               )}
-            </button>
+              </button>
+            )}
 
             {/* Video info section - below thumbnail (YouTube-like) */}
             {item.type === "video" && (
@@ -544,7 +665,7 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={(e) => handleShare(e, item, index)}
+                      onClick={(e) => handleShare(e, item, originalIndex)}
                       className="h-8 w-8 text-muted-foreground hover:text-foreground"
                       title="Share"
                     >
@@ -562,8 +683,8 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
                   </div>
                 </div>
                 
-                {/* Tags - max 2 rows with overflow indicator */}
-                {item.tags && item.tags.length > 0 && (
+                {/* Tags - hidden on mobile (use filter dropdown instead), shown on desktop */}
+                {!isMobile && item.tags && item.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 max-h-[44px] overflow-hidden">
                     {item.tags.slice(0, 5).map((tag) => (
                       <span
@@ -583,10 +704,11 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
               </div>
             )}
           </div>
-        ))}
+        )})}
       </div>
 
-      {/* Lightbox Dialog */}
+      {/* Lightbox Dialog - only show when NOT using detail page */}
+      {!useDetailPage && (
       <Dialog open={isOpen} onOpenChange={(open) => !open && closeLightbox()}>
         <DialogContent 
           className="p-0 bg-black border-none overflow-hidden gap-0 !max-w-none"
@@ -899,9 +1021,10 @@ export function MediaGallery({ items, onUpdateMedia, onUpdateCaption, onDelete }
           )}
         </DialogContent>
       </Dialog>
+      )}
 
-      {/* Thumbnail Selector for regenerating preview */}
-      {videoUrlForThumbnail && (
+      {/* Thumbnail Selector for regenerating preview - only when NOT using detail page */}
+      {!useDetailPage && videoUrlForThumbnail && (
         <VideoThumbnailSelector
           isOpen={thumbnailSelectorOpen}
           videoUrl={videoUrlForThumbnail}

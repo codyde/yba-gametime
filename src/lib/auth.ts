@@ -27,6 +27,11 @@ export const auth = betterAuth({
     enabled: true,
     requireEmailVerification: false,
   },
+  trustedOrigins: [
+    "https://appleid.apple.com",
+    "http://localhost:3000",
+    process.env.NEXT_PUBLIC_BASE_URL,
+  ].filter(Boolean) as string[],
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || "",
@@ -45,10 +50,16 @@ export const auth = betterAuth({
         process.env.APPLE_PRIVATE_KEY
       ),
     },
+    facebook: {
+      clientId: process.env.FACEBOOK_CLIENT_ID || "",
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
+      enabled: process.env.NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED === "true" && 
+        !!(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET),
+    },
   },
   accountLinking: {
     enabled: true,
-    trustedProviders: ["google", "apple"],
+    trustedProviders: ["google", "apple", "facebook"],
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days

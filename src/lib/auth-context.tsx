@@ -19,6 +19,7 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<boolean>;
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
   openLogin: () => void;
   closeLogin: () => void;
@@ -104,6 +105,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const signInWithFacebook = useCallback(async () => {
+    try {
+      await authClient.signIn.social({
+        provider: "facebook",
+        callbackURL: "/",
+      });
+    } catch (error) {
+      console.error("Facebook sign-in failed:", error);
+    }
+  }, []);
+
   const openLogin = useCallback(() => {
     setIsRegisterOpen(false);
     setIsLoginOpen(true);
@@ -142,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         signInWithGoogle,
         signInWithApple,
+        signInWithFacebook,
         logout,
         openLogin,
         closeLogin,

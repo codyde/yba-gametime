@@ -1,0 +1,20 @@
+# Build artifacts
+.next
+node_modules
+*.tsbuildinfo
+
+# Local env
+.env
+.env.*
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug logs
+*.log

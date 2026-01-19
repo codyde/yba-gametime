@@ -2,12 +2,12 @@
 
 import { useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
+import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { GamesList } from "@/components/GamesList";
 import { LoginModal } from "@/components/LoginModal";
 import { CreateGameModal } from "@/components/CreateGameModal";
 import { CoverPhotosModal } from "@/components/CoverPhotosModal";
-import { AdminBar } from "@/components/AdminBar";
 import { useAuth } from "@/lib/auth-context";
 import { useGames } from "@/lib/games-context";
 import { useKeyboardShortcut } from "@/lib/use-keyboard-shortcut";
@@ -30,8 +30,11 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={`min-h-screen bg-background ${isAuthenticated ? "pb-16" : ""}`}>
-      <Hero games={games} />
+    <div className="min-h-screen bg-background">
+      {/* Header - always visible */}
+      <Header onCreateGame={handleCreateGame} />
+
+      <Hero games={games} onManageCovers={handleManageCovers} />
 
       <main className="container mx-auto px-4 py-12">
         {isLoading ? (
@@ -46,21 +49,15 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-border mt-24">
         <div className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
-          <p className="text-gradient-pink font-semibold">GirlsGotGame</p>
+          <p className="text-gradient-pink font-semibold">YBA Gametime</p>
           <p className="mt-1">Basketball and Football highlights</p>
           {!isAuthenticated && (
             <p className="mt-3 text-xs opacity-50">
-              Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Cmd+K</kbd> to access admin panel
+              Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono">Cmd+K</kbd> to sign in
             </p>
           )}
         </div>
       </footer>
-
-      {/* Admin Bar */}
-      <AdminBar 
-        onCreateGame={handleCreateGame} 
-        onManageCovers={handleManageCovers}
-      />
 
       {/* Modals */}
       <LoginModal onCreateGame={handleCreateGame} />

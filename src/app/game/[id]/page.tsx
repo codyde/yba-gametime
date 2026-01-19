@@ -3,6 +3,7 @@
 import { use, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Image as ImageIcon, Loader2, Tag, X } from "lucide-react";
+import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Scoreboard } from "@/components/Scoreboard";
@@ -25,7 +26,7 @@ export default function GamePage({ params }: GamePageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [mediaLoading, setMediaLoading] = useState(true);
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTag, setSelectedTag] = useState<string>("");
 
   const game = games.find((g) => g.id === id);
 
@@ -38,21 +39,17 @@ export default function GamePage({ params }: GamePageProps) {
     return Array.from(tagSet).sort();
   }, [mediaItems]);
 
-  // Filter media by selected tags
+  // Filter media by selected tag
   const filteredMediaItems = useMemo(() => {
-    if (selectedTags.length === 0) return mediaItems;
-    return mediaItems.filter((item) =>
-      selectedTags.some((tag) => item.tags?.includes(tag))
-    );
-  }, [mediaItems, selectedTags]);
+    if (!selectedTag) return mediaItems;
+    return mediaItems.filter((item) => item.tags?.includes(selectedTag));
+  }, [mediaItems, selectedTag]);
 
   const toggleTagFilter = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+    setSelectedTag((prev) => (prev === tag ? "" : tag));
   };
 
-  const clearTagFilters = () => setSelectedTags([]);
+  const clearTagFilters = () => setSelectedTag("");
 
   // Fetch media for this game
   useEffect(() => {
@@ -136,17 +133,20 @@ export default function GamePage({ params }: GamePageProps) {
         isLoaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      {/* Header */}
-      <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-sm z-10">
-        <div className="container mx-auto px-4 py-4">
+      {/* Consistent Header */}
+      <Header />
+
+      {/* Page-specific navigation */}
+      <div className="border-b border-border/50 bg-background/50">
+        <div className="container mx-auto px-4 py-3">
           <Link href="/">
-            <Button variant="ghost" className="gap-2 hover:text-primary transition-colors">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-4 h-4" />
               Back to Games
             </Button>
           </Link>
         </div>
-      </header>
+      </div>
 
       <main className="container mx-auto px-4 py-8 space-y-12">
         {/* Scoreboard with animation */}
@@ -169,7 +169,7 @@ export default function GamePage({ params }: GamePageProps) {
               <ImageIcon className="w-6 h-6 text-primary" />
               <h2 className="text-2xl font-bold">Photos & Videos</h2>
               <span className="text-muted-foreground">
-                ({filteredMediaItems.length}{selectedTags.length > 0 ? ` of ${mediaItems.length}` : ''})
+                ({filteredMediaItems.length}{selectedTag ? ` of ${mediaItems.length}` : ''})
               </span>
             </div>
             {!authLoading && isAuthenticated && (
@@ -183,7 +183,7 @@ export default function GamePage({ params }: GamePageProps) {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Tag className="w-4 h-4" />
                 <span>Filter by tag:</span>
-                {selectedTags.length > 0 && (
+                {selectedTag && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -199,9 +199,9 @@ export default function GamePage({ params }: GamePageProps) {
                 {availableTags.map((tag) => (
                   <Badge
                     key={tag}
-                    variant={selectedTags.includes(tag) ? "default" : "outline"}
+                    variant={selectedTag === tag ? "default" : "outline"}
                     className={`cursor-pointer transition-colors uppercase tracking-wide text-xs font-semibold ${
-                      selectedTags.includes(tag)
+                      selectedTag === tag
                         ? "bg-primary hover:bg-primary/80"
                         : "hover:bg-muted"
                     }`}

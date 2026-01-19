@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       caption: item.caption ?? undefined,
       tags: item.tags ?? undefined,
       uploader: item.uploader,
+      uploaderId: item.uploaderId ?? undefined,
       uploadedAt: item.uploadedAt.toISOString(),
       gameId: item.gameId,
     }));
@@ -54,13 +55,14 @@ export async function POST(request: NextRequest) {
       thumbnail: body.thumbnail ?? null,
       caption: body.caption ?? null,
       tags: body.tags ?? null,
-      uploader: body.uploader ?? 'Cody',
+      uploader: body.uploader ?? 'Anonymous',
+      uploaderId: body.uploaderId ?? null,
     });
 
     return NextResponse.json({ 
       id: mediaId,
       ...body,
-      uploader: body.uploader ?? 'Cody',
+      uploader: body.uploader ?? 'Anonymous',
       uploadedAt: new Date().toISOString(),
     }, { status: 201 });
   } catch (error) {

@@ -35,9 +35,23 @@ export interface MediaItem {
   thumbnail?: string;
   caption?: string;
   tags?: string[];
-  uploader: string;
+  uploader: string; // Display name
+  uploaderId?: string; // Reference to user if authenticated
   uploadedAt: string;
   gameId?: string;
+}
+
+export interface Comment {
+  id: string;
+  mediaId: string;
+  userId: string;
+  userName: string;
+  userImage?: string;
+  content: string;
+  parentId?: string;
+  createdAt: string;
+  updatedAt: string;
+  replies?: Comment[];
 }
 
 // Hero background images for rotating display

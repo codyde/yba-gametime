@@ -4,6 +4,25 @@ import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import { users, sessions, accounts, verifications } from "@/db/schema";
 
+// Debug: Log social auth configuration on startup
+console.log('[Social Auth Config]', {
+  apple: {
+    clientId: process.env.APPLE_CLIENT_ID,
+    hasSecret: !!process.env.APPLE_CLIENT_SECRET,
+  },
+  facebook: {
+    clientId: process.env.FACEBOOK_CLIENT_ID,
+    hasSecret: !!process.env.FACEBOOK_CLIENT_SECRET,
+    enabled: !!(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET),
+  },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    hasSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+  },
+  baseUrl: process.env.NEXT_PUBLIC_BASE_URL,
+  betterAuthUrl: process.env.BETTER_AUTH_URL,
+});
+
 // Parse admin emails from environment variable (comma-separated)
 const getAdminEmails = (): string[] => {
   const adminEmails = process.env.ADMIN_EMAILS || "";
@@ -40,26 +59,23 @@ export const auth = betterAuth({
     },
     apple: {
       clientId: process.env.APPLE_CLIENT_ID || "",
-      teamId: process.env.APPLE_TEAM_ID || "",
-      keyId: process.env.APPLE_KEY_ID || "",
-      privateKey: process.env.APPLE_PRIVATE_KEY || "",
+      clientSecret: process.env.APPLE_CLIENT_SECRET || "",
       enabled: !!(
         process.env.APPLE_CLIENT_ID &&
-        process.env.APPLE_TEAM_ID &&
-        process.env.APPLE_KEY_ID &&
-        process.env.APPLE_PRIVATE_KEY
+        process.env.APPLE_CLIENT_SECRET
       ),
     },
     facebook: {
       clientId: process.env.FACEBOOK_CLIENT_ID || "",
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
-      enabled: process.env.NEXT_PUBLIC_FACEBOOK_AUTH_ENABLED === "true" && 
-        !!(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET),
+      enabled: !!(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET),
     },
   },
-  accountLinking: {
-    enabled: true,
-    trustedProviders: ["google", "apple", "facebook"],
+  account: {
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google", "apple", "facebook"],
+    },
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days

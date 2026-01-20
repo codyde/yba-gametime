@@ -159,9 +159,10 @@ export function MediaUpload({ gameId, onUploadComplete }: MediaUploadProps) {
     
     if (firstVideo?.mediaId) {
       // Redirect to video page for thumbnail generation after a short delay
+      // ?new=1 triggers auto-open of thumbnail drawer
       setTimeout(() => {
         onUploadComplete?.();
-        router.push(`/video/${firstVideo.mediaId}`);
+        router.push(`/video/${firstVideo.mediaId}?new=1`);
       }, 1500);
     } else {
       // No videos - just complete

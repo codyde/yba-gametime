@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   ArrowLeft, 
   Calendar, 
@@ -64,6 +64,7 @@ interface VideoPageClientProps {
 
 export function VideoPageClient({ media }: VideoPageClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
   const { updateMedia, deleteMedia } = useMedia();
   
@@ -76,6 +77,20 @@ export function VideoPageClient({ media }: VideoPageClientProps) {
   const [currentThumbnail, setCurrentThumbnail] = useState(media.thumbnail);
   const [currentCaption, setCurrentCaption] = useState(media.caption);
   const [currentTags, setCurrentTags] = useState(media.tags);
+
+  // Auto-open thumbnail drawer for fresh uploads (video without thumbnail)
+  useEffect(() => {
+    const isNewUpload = searchParams.get("new") === "1";
+    if (isNewUpload && media.type === "video" && !media.thumbnail) {
+      // Small delay to let the page render first
+      const timer = setTimeout(() => {
+        setThumbnailDrawerOpen(true);
+        // Clean up URL param
+        router.replace(`/video/${media.id}`, { scroll: false });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, media.type, media.thumbnail, media.id, router]);
 
   // Generate default title from date if no caption
   const defaultTitle = new Date(media.uploadedAt).toLocaleString("en-US", {
@@ -219,6 +234,17 @@ export function VideoPageClient({ media }: VideoPageClientProps) {
         await updateMedia(media.id, { thumbnail: publicUrl });
         setCurrentThumbnail(publicUrl);
         toast.success("Thumbnail updated!");
+        
+        // After setting thumbnail, transition to edit drawer if no title set
+        setThumbnailDrawerOpen(false);
+        if (!currentCaption) {
+          setTimeout(() => {
+            setEditCaption("");
+            setEditTagsArray(currentTags || []);
+            setEditDrawerOpen(true);
+          }, 300);
+        }
+        return;
       }
     } catch {
       toast.error("Failed to update thumbnail");
